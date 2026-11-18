@@ -1,8 +1,20 @@
 {
-  "name": "imap-mail",
-  "version": "0.1.0",
-  "description": "Read, summarize, clean up and draft replies in any IMAP email account (iCloud, Gmail, Fastmail, Yahoo and more) through a local PowerShell module on Windows. Drafts only; nothing is sent without your approval.",
-  "author": { "name": "Josh Jones" },
-  "license": "MIT",
-  "keywords": ["email", "imap", "icloud", "gmail", "inbox", "powershell", "windows"]
+    "name":  "imap-mail",
+    "version":  "0.1.0",
+    "description":  "Windows-native email for Claude with nothing to install: read, summarize, clean up and draft replies in any IMAP account (iCloud, Gmail, Fastmail, Yahoo and more) using built-in PowerShell. DPAPI-encrypted password, drafts-first sending, cleanup with an undo log.",
+    "author":  {
+                   "name":  "Josh Jones"
+               },
+    "license":  "MIT",
+    "keywords":  [
+                     "email",
+                     "imap",
+                     "icloud",
+                     "gmail",
+                     "inbox",
+                     "powershell",
+                     "windows",
+                     "no-dependencies",
+                     "dpapi"
+                 ]
 }

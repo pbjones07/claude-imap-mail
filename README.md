@@ -1,6 +1,24 @@
 # ImapMail for Claude
 
-Let Claude read, summarize, clean up and draft replies in **any IMAP email account** (iCloud, Gmail, Fastmail, Yahoo, AOL, Zoho or a custom server), with no third-party service in between. Claude drives a small PowerShell module on your Windows PC that talks directly to your mail server.
+**Email for Claude on Windows, with nothing to install.** No Node.js, no Python, no Docker, and no password sitting in a config file.
+
+Let Claude read, summarize, clean up and draft replies in **any IMAP email account** (iCloud, Gmail, Fastmail, Yahoo, AOL, Zoho or a custom server). It runs on the PowerShell that already comes with Windows and talks straight to your mail server, with no third-party service in between.
+
+## Why this one?
+
+Most email integrations for Claude are MCP servers that need a developer toolchain installed and keep your password in an environment variable or `.env` file. ImapMail takes a different approach:
+
+| | ImapMail | Typical IMAP MCP server |
+|---|---|---|
+| Runtime | Windows PowerShell 5.1, already on every Windows 10/11 PC | Node.js, Python/uv or Docker |
+| Install | Run one script | Install the runtime, then a package, then edit a JSON config |
+| Password storage | Encrypted with Windows DPAPI, tied to your Windows account | Often plain text in env vars or a `.env` file |
+| Setup | Guided prompt that tests your sign-in before saving | Edit config by hand |
+| Sending | Drafts first; sends only what you approve | Varies; many send directly |
+| Bulk cleanup | Built in, moves mail to Trash with a CSV undo log | Usually per-message only |
+| How Claude uses it | A skill that drives a local PowerShell shell, so it works from Claude Code or a Claude app linked to your PC | Must be registered as an MCP server in each client |
+
+If you're on macOS or Linux, or want email tools inside clients other than Claude, an MCP server is probably a better fit. ImapMail is for Windows users who want it to just work.
 
 **What it can do**
 - Summarize today's mail, or search by sender, subject, date or text
