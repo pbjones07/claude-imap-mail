@@ -380,4 +380,4 @@ function Remove-MailDraft {
 
 Export-ModuleMember -Function Initialize-ImapMail, Get-MailConfig, Get-MailFolder, Find-Mail, Read-Mail, Save-MailAttachment,
     Set-MailFlag, Move-Mail, Remove-Mail, New-MailDraft, Send-MailDraft, Remove-MailDraft,
-    Get-Calendar, Get-CalendarEvent, New-CalendarEvent, Remove-CalendarEvent, Restore-CalendarEvent, Get-CalendarBackup
+    Get-Calendar, Get-CalendarEvent, New-CalendarEvent, Set-CalendarEvent, Remove-CalendarEvent, Restore-CalendarEvent, Get-CalendarBackup

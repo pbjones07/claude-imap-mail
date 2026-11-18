@@ -1,6 +1,6 @@
 {
     "name":  "imap-mail",
-    "version":  "0.2.0",
+    "version":  "0.3.0",
     "description":  "Windows-native email and calendar for Claude with nothing to install: read, summarize, clean up and draft replies in any IMAP account (iCloud, Gmail, Fastmail, Yahoo and more) using built-in PowerShell. DPAPI-encrypted password, drafts-first sending, cleanup with an undo log.",
     "author":  {
                    "name":  "Josh Jones"

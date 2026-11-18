@@ -48,11 +48,12 @@ The calendar uses the same app password. It works with iCloud, Fastmail, Yahoo, 
 |---|---|
 | `Get-Calendar` | List calendars and reminder lists |
 | `Get-CalendarEvent [-Start date] [-Days 7] [-End date] [-Calendar name] [-Search text]` | Events in a range, with repeating events expanded. Returns Calendar, Title, Start, End, AllDay, Location, Notes, Recurring, RecurrenceId, Uid, Href |
-| `New-CalendarEvent -Title s -Start dt [-End dt \| -DurationMinutes 60] [-AllDay] [-Location s] [-Notes s] [-Calendar name]` | Create an event (local times) |
+| `New-CalendarEvent -Title s -Start dt [-End dt \| -DurationMinutes 60] [-AllDay] [-Location s] [-Notes s] [-Calendar name] [-Repeat RRULE] [-ReminderMinutesBefore n]` | Create an event (local times). `-Repeat 'FREQ=MONTHLY'` makes it repeat; `'FREQ=MONTHLY;BYMONTHDAY=28,29,30;BYSETPOS=-1'` = the 30th, or the last day of a short month. `-ReminderMinutesBefore 900` on an all-day event = 9 AM the day before |
+| `Get-CalendarEvent ... \| Set-CalendarEvent [-NewTitle s] [-ShiftDays n]` | Rename an event or move it by days. For a repeating event this changes the whole series |
 | `Get-CalendarEvent ... \| Remove-CalendarEvent [-WholeSeries]` | Remove events. For a repeating event it removes only the piped occurrence unless `-WholeSeries` is given |
 | `Get-CalendarBackup` / `Restore-CalendarEvent -Path file` | Every change backs up the original event first. Restore puts it back exactly |
 
-To change an event, remove it and create a new one, or, for one occurrence of a series, remove that occurrence and create a one-off event.
+To change one occurrence of a series, remove that occurrence and create a one-off event. `Set-CalendarEvent` refuses to shift series that have edited occurrences or that repeat on specific weekdays or month days; recreate those instead.
 
 ### Calendar rules
 - **Confirm every calendar change first.** Show what will be added or removed (title, date, time, calendar), and for repeating events say whether it's one occurrence or the whole series. Make the change only after the user says yes.

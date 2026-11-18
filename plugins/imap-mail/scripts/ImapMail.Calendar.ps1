@@ -196,7 +196,9 @@ function New-CalendarEvent {
         [Parameter(Mandatory)][string]$Title,
         [Parameter(Mandatory)][datetime]$Start,
         [datetime]$End, [int]$DurationMinutes = 60, [switch]$AllDay,
-        [string]$Location, [string]$Notes, [string]$Calendar
+        [string]$Location, [string]$Notes, [string]$Calendar,
+        [string]$Repeat,                  # an RRULE, e.g. 'FREQ=MONTHLY' or 'FREQ=MONTHLY;BYMONTH=3,6,9,12'
+        [int]$ReminderMinutesBefore = -1  # e.g. 900 = 9 AM the day before an all-day event
     )
     $s = Get-CalDavSettings
     $cals = @(Get-CalendarCollections $s | Where-Object { $_.Components -match 'VEVENT' })
@@ -217,15 +219,19 @@ function New-CalendarEvent {
         $lines += "DTSTART:$($Start.ToUniversalTime().ToString($fmt))"
         $lines += "DTEND:$($End.ToUniversalTime().ToString($fmt))"
     }
+    if ($Repeat) { $lines += "RRULE:$($Repeat -replace '^RRULE:', '')" }
     $lines += "SUMMARY:$(Escape-Ics $Title)"
     if ($Location) { $lines += "LOCATION:$(Escape-Ics $Location)" }
     if ($Notes) { $lines += "DESCRIPTION:$(Escape-Ics $Notes)" }
+    if ($ReminderMinutesBefore -ge 0) {
+        $lines += 'BEGIN:VALARM', 'ACTION:DISPLAY', "DESCRIPTION:$(Escape-Ics $Title)", "TRIGGER:-PT$($ReminderMinutesBefore)M", "UID:$([guid]::NewGuid().ToString().ToUpper())", 'END:VALARM'
+    }
     $lines += 'END:VEVENT', 'END:VCALENDAR'
     $ics = (($lines | ForEach-Object { Format-IcsLine $_ }) -join "`r`n") + "`r`n"
     $url = $cal.Url.TrimEnd('/') + "/$uid.ics"
     $r = Invoke-Dav -Url $url -Method PUT -Auth $s.Auth -Body $ics -ContentType 'text/calendar; charset=utf-8' -Headers @{ 'If-None-Match' = '*' }
     if ($r.Code -notin 200, 201, 204) { throw "Could not create event (HTTP $($r.Code)): $($r.Body)" }
-    [pscustomobject][ordered]@{ Created = $true; Calendar = $cal.Name; Title = $Title; Start = $Start; End = if ($AllDay) { $last } else { $End }; AllDay = [bool]$AllDay; Uid = $uid; Href = $url }
+    [pscustomobject][ordered]@{ Created = $true; Calendar = $cal.Name; Title = $Title; Start = $Start; End = if ($AllDay) { $last } else { $End }; AllDay = [bool]$AllDay; Repeat = $Repeat; Uid = $uid; Href = $url }
 }
 
 function Remove-CalendarEvent {
@@ -291,6 +297,53 @@ function Remove-CalendarEvent {
     }
 }
 
+function Set-CalendarEvent {
+    <#
+      Renames an event and/or moves it by a number of days. For a repeating event the change
+      applies to the whole series (past and future). Backs up the original first.
+      Pipe in a result from Get-CalendarEvent, or pass -Href.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipelineByPropertyName)][string]$Href,
+        [string]$NewTitle,
+        [int]$ShiftDays = 0
+    )
+    begin { $s = Get-CalDavSettings }
+    process {
+        if (-not $NewTitle -and $ShiftDays -eq 0) { throw 'Nothing to change: pass -NewTitle and/or -ShiftDays.' }
+        $res = Get-CalendarResource $s $Href
+        $ics = $res.Body
+        $blocks = [regex]::Matches($ics, '(?s)BEGIN:VEVENT.*?END:VEVENT\r?\n?')
+        $mp = Get-IcsProps $blocks[0].Value
+        $uid = $mp['UID'].Value; $oldTitle = Unescape-Ics $mp['SUMMARY'].Value
+        if ($ShiftDays -ne 0) {
+            if ($blocks.Count -gt 1 -or $ics -match '(?m)^RECURRENCE-ID') { throw "'$oldTitle' has edited occurrences; move it in your calendar app instead." }
+            if ($ics -match '(?m)^RRULE:.*\b(BYMONTHDAY|BYDAY|BYYEARDAY|BYWEEKNO|BYSETPOS)=') { throw "'$oldTitle' repeats on specific days; recreate it instead of shifting." }
+        }
+        $backup = Save-CalendarBackup $Href $ics $uid
+        $new = $ics
+        if ($ShiftDays -ne 0) {
+            $shifted = [regex]::Replace($blocks[0].Value, '(?m)^(DTSTART|DTEND|EXDATE)((?:;[^:\r\n]*)?):([^\r\n]+)', {
+                param($m)
+                $vals = foreach ($v in $m.Groups[3].Value.Split(',')) {
+                    $v = $v.Trim()
+                    if ($v -match '^\d{8}$') { [datetime]::ParseExact($v, 'yyyyMMdd', $null).AddDays($ShiftDays).ToString('yyyyMMdd') }
+                    elseif ($v -match '^(\d{8}T\d{6})(Z?)$') { [datetime]::ParseExact($matches[1], "yyyyMMdd'T'HHmmss", $null).AddDays($ShiftDays).ToString("yyyyMMdd'T'HHmmss") + $matches[2] }
+                    else { $v }
+                }
+                "$($m.Groups[1].Value)$($m.Groups[2].Value):$($vals -join ',')"
+            })
+            $new = $new.Replace($blocks[0].Value, $shifted)
+        }
+        if ($NewTitle) {
+            $new = [regex]::Replace($new, '(?m)^SUMMARY(;[^:\r\n]*)?:[^\r\n]*(\r?\n[ \t][^\r\n]*)*', ('SUMMARY:' + (Escape-Ics $NewTitle)).Replace('$', '$$'))
+        }
+        $r = Invoke-Dav -Url $Href -Method PUT -Auth $s.Auth -Body $new -ContentType 'text/calendar; charset=utf-8' -Headers @{ 'If-Match' = $res.ETag }
+        if ($r.Code -notin 200, 201, 204) { throw "Update failed (HTTP $($r.Code)): $($r.Body)" }
+        [pscustomobject][ordered]@{ Updated = $true; OldTitle = $oldTitle; NewTitle = $(if ($NewTitle) { $NewTitle } else { $oldTitle }); ShiftedDays = $ShiftDays; Backup = $backup }
+    }
+}
 function Restore-CalendarEvent {
     <# Puts an event back exactly as it was before a change, from a backup made by Remove-CalendarEvent. #>
     [CmdletBinding()] param([Parameter(Mandatory)][string]$Path)
