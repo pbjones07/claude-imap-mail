@@ -1,0 +1,8 @@
+{
+  "name": "imap-mail",
+  "version": "0.1.0",
+  "description": "Read, summarize, clean up and draft replies in any IMAP email account (iCloud, Gmail, Fastmail, Yahoo and more) through a local PowerShell module on Windows. Drafts only; nothing is sent without your approval.",
+  "author": { "name": "Josh Jones" },
+  "license": "MIT",
+  "keywords": ["email", "imap", "icloud", "gmail", "inbox", "powershell", "windows"]
+}

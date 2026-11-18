@@ -1,0 +1,11 @@
+{
+  "name": "imap-mail",
+  "owner": { "name": "Josh Jones" },
+  "plugins": [
+    {
+      "name": "imap-mail",
+      "source": "./plugins/imap-mail",
+      "description": "Read, summarize, clean up and draft replies in any IMAP email account through a local PowerShell module on Windows."
+    }
+  ]
+}
