@@ -1,9 +1,9 @@
 ---
 name: imap-mail
-description: Reads, searches, summarizes, cleans up and drafts replies in the user's email (iCloud, Gmail, Fastmail, Yahoo or any IMAP account) through the ImapMail PowerShell module on their Windows PC. Use when the user asks to check, summarize, search, sort, clean out, or reply to their email or inbox and no dedicated email connector covers that account.
+description: Reads, searches, summarizes, cleans up and drafts replies in the user's email (iCloud, Gmail, Fastmail, Yahoo or any IMAP account), and reads and updates their calendar (iCloud, Fastmail, Yahoo, Zoho or any CalDAV server), through the ImapMail PowerShell module on their Windows PC. Use when the user asks to check, summarize, search, sort, clean out, or reply to their email or inbox, or asks what's on their calendar, to add or remove an event, or to skip an occurrence of a repeating event, and no dedicated connector covers that account.
 ---
 
-# Email over IMAP with the ImapMail PowerShell module
+# Email (IMAP) and calendar (CalDAV) with the ImapMail PowerShell module
 
 The ImapMail module talks to the user's mail server over IMAP (reading and organizing) and SMTP (sending) from their Windows PC. Run it with whatever PowerShell tool reaches that PC: a local shell in Claude Code, or a remote-device PowerShell tool.
 
@@ -40,7 +40,26 @@ Each tool call may be a fresh process, so import every time.
 
 UIDs belong to one folder. After a message moves, search for it again in the new folder.
 
-## Rules
+## Calendar commands
+
+The calendar uses the same app password. It works with iCloud, Fastmail, Yahoo, Zoho and custom CalDAV servers. **Gmail calendars are not supported** (Google requires OAuth for CalDAV), so point Gmail users to a Google Calendar connector.
+
+| Command | Use |
+|---|---|
+| `Get-Calendar` | List calendars and reminder lists |
+| `Get-CalendarEvent [-Start date] [-Days 7] [-End date] [-Calendar name] [-Search text]` | Events in a range, with repeating events expanded. Returns Calendar, Title, Start, End, AllDay, Location, Notes, Recurring, RecurrenceId, Uid, Href |
+| `New-CalendarEvent -Title s -Start dt [-End dt \| -DurationMinutes 60] [-AllDay] [-Location s] [-Notes s] [-Calendar name]` | Create an event (local times) |
+| `Get-CalendarEvent ... \| Remove-CalendarEvent [-WholeSeries]` | Remove events. For a repeating event it removes only the piped occurrence unless `-WholeSeries` is given |
+| `Get-CalendarBackup` / `Restore-CalendarEvent -Path file` | Every change backs up the original event first. Restore puts it back exactly |
+
+To change an event, remove it and create a new one, or, for one occurrence of a series, remove that occurrence and create a one-off event.
+
+### Calendar rules
+- **Confirm every calendar change first.** Show what will be added or removed (title, date, time, calendar), and for repeating events say whether it's one occurrence or the whole series. Make the change only after the user says yes.
+- Never use `-WholeSeries` unless the user explicitly asked to delete the entire repeating event.
+- After a change, read the affected dates back with `Get-CalendarEvent` and report what the calendar now shows.
+- Point out conflicts you notice, such as work events on days the user said they have off, or double-booked times. Don't fix them without asking.
+## Email rules
 
 - **Never send without explicit approval of that specific message.** Write a draft with `New-MailDraft`, show the user the recipients, subject and body, and call `Send-MailDraft` only after they say to send it. Mention they can also review the draft in their own mail app.
 - **Clean up with `Remove-Mail`, never by deleting.** It moves mail to Trash, where most providers keep it for about 30 days, and writes a log in `%APPDATA%\ImapMail\logs`.

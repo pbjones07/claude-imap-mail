@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $src = $PSScriptRoot
 $dest = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Modules\ImapMail'
 New-Item -ItemType Directory -Force $dest | Out-Null
-foreach ($f in 'ImapMail.psm1', 'ImapMail.cs') {
+foreach ($f in 'ImapMail.psm1', 'ImapMail.cs', 'ImapMail.Calendar.ps1') {
     Copy-Item (Join-Path $src $f) $dest -Force
     Unblock-File (Join-Path $dest $f)
 }

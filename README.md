@@ -1,6 +1,6 @@
 # ImapMail for Claude
 
-**Email for Claude on Windows, with nothing to install.** No Node.js, no Python, no Docker, and no password sitting in a config file.
+**Email and calendar for Claude on Windows, with nothing to install.** No Node.js, no Python, no Docker, and no password sitting in a config file.
 
 Let Claude read, summarize, clean up and draft replies in **any IMAP email account** (iCloud, Gmail, Fastmail, Yahoo, AOL, Zoho or a custom server). It runs on the PowerShell that already comes with Windows and talks straight to your mail server, with no third-party service in between.
 
@@ -25,11 +25,13 @@ If you're on macOS or Linux, or want email tools inside clients other than Claud
 - Read full messages and save attachments
 - Mark messages read or flagged, move them between folders, and bulk-clean promotions and notifications (to Trash, with an undo log)
 - Write replies as **drafts** in your Drafts folder, and send them only after you approve
+- **Calendar:** see what's coming up, add events, and remove an event or a single occurrence of a repeating one (iCloud, Fastmail, Yahoo, Zoho or any CalDAV server; every change is backed up first)
 
 **Safety by design**
 - Your app password is encrypted with Windows DPAPI under your Windows account. Claude never sees it, and it never leaves your PC.
 - Claude saves drafts. It never sends anything unless you approve that specific message.
 - Cleanup moves mail to Trash (recoverable) and logs every move.
+- Calendar changes are confirmed with you first, and the original event is saved so it can be restored exactly.
 
 ## Requirements
 - Windows 10 or 11 with Windows PowerShell 5.1 (built in)
@@ -61,12 +63,14 @@ Choose your provider, enter your address, and paste your app password into the p
 | Yahoo / AOL | Account Security, then Generate app password |
 | Other | Choose "Other" and enter your IMAP/SMTP servers |
 
-Outlook.com and Microsoft 365 accounts no longer allow app-password IMAP sign-in, so they aren't supported.
+Outlook.com and Microsoft 365 accounts no longer allow app-password IMAP sign-in, so they aren't supported. Gmail mail works, but Gmail **calendar** doesn't (Google requires OAuth for calendar access).
 
 ### 3. Ask Claude
 > "Summarize today's emails"
 > "Clear out the promotional mail in my inbox"
 > "Draft a reply to the email from Sam saying Thursday works"
+> "What's on my calendar this week?"
+> "Take work off my calendar for the day after Thanksgiving"
 
 ## Using the module yourself
 ```powershell
@@ -78,7 +82,7 @@ New-MailDraft -ReplyToUid 1234 -Body "Thursday works for me."
 Run `Get-Command -Module ImapMail` to list every command.
 
 ## Where things are stored
-`%APPDATA%\ImapMail\` holds `config.json` (servers and address), `credential.xml` (encrypted password), `logs\` (CSV records of cleanup moves) and `bin\` (the helper library, compiled automatically from `ImapMail.cs` on first use). To disconnect, delete that folder and revoke the app password with your provider.
+`%APPDATA%\ImapMail\` holds `config.json` (servers and address), `credential.xml` (encrypted password), `logs\` (CSV records of cleanup moves), `calendar-backups\` (originals of changed events) and `bin\` (the helper library, compiled automatically from `ImapMail.cs` on first use). To disconnect, delete that folder and revoke the app password with your provider.
 
 ## License
 MIT

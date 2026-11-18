@@ -66,6 +66,17 @@ function Initialize-ImapMail {
     $user = (Read-Host "  Sign-in username [press Enter for $addr]").Trim(); if (-not $user) { $user = $addr }
     $name = (Read-Host '  Name to show on emails you send').Trim()
     $pw = Read-Host '  App password' -AsSecureString
+    # Calendar (CalDAV) uses the same app password.
+    $calUrl = $null; $calUser = $null
+    $calPresets = @{ 'iCloud' = 'https://caldav.icloud.com/'; 'Fastmail' = 'https://caldav.fastmail.com/'; 'Yahoo' = 'https://caldav.calendar.yahoo.com/'; 'Zoho' = 'https://calendar.zoho.com/caldav/' }
+    if ($calPresets.ContainsKey($provider)) {
+        $calUrl = $calPresets[$provider]
+        $calUser = if ($provider -eq 'iCloud') { (Read-Host "  Apple ID email for Calendar [press Enter for $addr]").Trim() } else { '' }
+        if (-not $calUser) { $calUser = $addr }
+    } elseif ($provider -eq 'Custom') {
+        $calUrl = (Read-Host '  CalDAV calendar URL (optional, press Enter to skip)').Trim()
+        if ($calUrl) { $calUser = $user }
+    }
     $cred = New-Object System.Management.Automation.PSCredential($user, $pw)
 
     Write-Host ''
@@ -87,7 +98,13 @@ function Initialize-ImapMail {
         Provider = $provider; Address = $addr; DisplayName = $name
         ImapHost = $s.ImapHost; ImapPort = [int]$s.ImapPort
         SmtpHost = $s.SmtpHost; SmtpPort = [int]$s.SmtpPort; SmtpTls = $s.SmtpTls
+        CalDavUrl = $calUrl; CalDavUser = $calUser
     } | ConvertTo-Json | Set-Content (Join-Path $script:DataDir 'config.json') -Encoding UTF8
+    if ($calUrl) {
+        Write-Host '  Testing calendar sign-in...' -NoNewline
+        try { [void](Get-Calendar); Write-Host ' OK' -ForegroundColor Green }
+        catch { Write-Host ' failed' -ForegroundColor Yellow; Write-Host "  Mail works, but calendar access didn't: $($_.Exception.Message)" -ForegroundColor Yellow }
+    }
     Write-Host '  All set. You can close this window.' -ForegroundColor Green
 }
 
@@ -359,5 +376,8 @@ function Remove-MailDraft {
     }
 }
 
+. (Join-Path $PSScriptRoot 'ImapMail.Calendar.ps1')
+
 Export-ModuleMember -Function Initialize-ImapMail, Get-MailConfig, Get-MailFolder, Find-Mail, Read-Mail, Save-MailAttachment,
-    Set-MailFlag, Move-Mail, Remove-Mail, New-MailDraft, Send-MailDraft, Remove-MailDraft
+    Set-MailFlag, Move-Mail, Remove-Mail, New-MailDraft, Send-MailDraft, Remove-MailDraft,
+    Get-Calendar, Get-CalendarEvent, New-CalendarEvent, Remove-CalendarEvent, Restore-CalendarEvent, Get-CalendarBackup
