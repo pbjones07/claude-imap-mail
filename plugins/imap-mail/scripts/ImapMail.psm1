@@ -159,7 +159,13 @@ function ConvertTo-MailObject($p, $Uid, $Folder, [int]$MaxChars) {
 }
 
 function Split-Batch([long[]]$Items, [int]$Size = 200) {
-    for ($i = 0; $i -lt $Items.Count; $i += $Size) { , ($Items[$i..([Math]::Min($i + $Size, $Items.Count) - 1)]) }
+    # Returns the batches as one List[long[]] so PowerShell cannot unroll a single batch into
+    # bare numbers (which made the IMAP calls fail to bind IEnumerable<long>).
+    $batches = New-Object 'System.Collections.Generic.List[long[]]'
+    for ($i = 0; $i -lt $Items.Count; $i += $Size) {
+        $batches.Add([long[]]@($Items[$i..([Math]::Min($i + $Size, $Items.Count) - 1)]))
+    }
+    , $batches
 }
 
 # ---------------------------------------------------------------- reading
